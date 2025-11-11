@@ -10,7 +10,10 @@ chmod +x deploy-unraid.sh
 ./deploy-unraid.sh
 ```
 
-Access: `http://YOUR_UNRAID_IP:8091`  
+Access: 
+- **Frontend**: `http://YOUR_UNRAID_IP:8091`
+- **Portainer**: `https://YOUR_UNRAID_IP:9443` (Docker management)
+
 Login: `admin` / `Admin123!` (change immediately!)
 
 ---
@@ -23,7 +26,8 @@ Login: `admin` / `Admin123!` (change immediately!)
 | Backend | 2GB | 1.5 | 500MB |
 | Redis | 512MB | 0.5 | 100MB |
 | Frontend | 256MB | 0.5 | 100MB |
-| **Total** | **~4GB** | **~4 cores** | **~10GB** |
+| Portainer | 256MB | 0.5 | 50MB |
+| **Total** | **~4.5GB** | **~4.5 cores** | **~10GB** |
 
 ---
 

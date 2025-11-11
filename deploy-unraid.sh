@@ -69,7 +69,7 @@ check_docker() {
 create_directories() {
     print_info "Creating directory structure at ${APP_PATH}..."
     
-    mkdir -p "${APP_PATH}"/{postgres,redis,logs,backups}
+    mkdir -p "${APP_PATH}"/{postgres,redis,logs,backups,portainer}
     
     # Set permissions for Unraid (nobody:users)
     chown -R ${PUID}:${PGID} "${APP_PATH}"

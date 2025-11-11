@@ -191,12 +191,50 @@ services:
         max-size: "5m"
         max-file: "2"
 
+  # Portainer - Docker Management UI
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: medicine_man_portainer
+    environment:
+      - PUID=${PUID:-99}
+      - PGID=${PGID:-100}
+      - TZ=${TZ:-America/New_York}
+    ports:
+      - "${PORTAINER_PORT:-9443}:9443"  # HTTPS UI
+      - "${PORTAINER_HTTP_PORT:-9000}:9000"  # HTTP UI (legacy)
+      - "8000:8000"  # Edge agent
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${BASE_PATH:-/mnt/user/appdata}/medicine-man/portainer:/data
+    networks:
+      - medicine_man_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:9000/api/status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    mem_limit: 256M
+    mem_reservation: 128M
+    cpus: 0.5
+    pids_limit: 50
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+    security_opt:
+      - no-new-privileges:true
+
 # Named volumes - not used in Unraid (we use bind mounts to /mnt/user/appdata)
 # Kept for compatibility with non-Unraid deployments
 volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  portainer_data:
     driver: local
 
 networks:

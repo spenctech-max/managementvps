@@ -82,9 +82,12 @@ The script will:
 - Display access information
 
 4. **Access the application**:
-   - Frontend: `http://YOUR_UNRAID_IP:8091`
+   - **Medicine Man Frontend**: `http://YOUR_UNRAID_IP:8091`
+   - **Portainer (Docker Management)**: `https://YOUR_UNRAID_IP:9443`
+   - **Backend API**: `http://YOUR_UNRAID_IP:3000`
    - Default login: `admin` / `Admin123!`
    - **⚠️ Change the password immediately!**
+   - **Note**: Portainer requires initial setup on first access
 
 ---
 
