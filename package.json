@@ -1,0 +1,35 @@
+{
+  "name": "medicine-man-monorepo",
+  "version": "1.0.0",
+  "description": "Medicine Man - Server Backup Management System",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=shared && npm run build --workspace=backend && npm run build --workspace=frontend",
+    "dev": "npm run dev --workspace=backend & npm run dev --workspace=frontend",
+    "test": "npm test --workspaces",
+    "lint": "npm run lint --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
+    "docker:build": "docker-compose -f docker-compose.yml build",
+    "docker:up": "docker-compose -f docker-compose.yml up -d",
+    "docker:down": "docker-compose -f docker-compose.yml down",
+    "docker:logs": "docker-compose -f docker-compose.yml logs -f",
+    "docker:restart": "docker-compose -f docker-compose.yml restart"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.1"
+  },
+  "keywords": [
+    "server-management",
+    "backup",
+    "monitoring",
+    "ssh",
+    "health-check"
+  ],
+  "author": "Medicine Man Team",
+  "license": "MIT"
+}

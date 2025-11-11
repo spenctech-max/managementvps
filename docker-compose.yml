@@ -1,0 +1,207 @@
+# Unraid-Optimized Docker Compose for Medicine Man
+# Configured for typical Unraid systems with SSD cache and array storage
+
+services:
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:17-alpine
+    container_name: medicine_man_postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-medicine_man}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+      # Unraid-optimized PostgreSQL settings (conservative for array performance)
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
+      POSTGRES_WAL_BUFFERS: 16MB
+      POSTGRES_DEFAULT_STATISTICS_TARGET: 100
+      POSTGRES_RANDOM_PAGE_COST: 4.0
+      POSTGRES_EFFECTIVE_IO_CONCURRENCY: 2
+      POSTGRES_WORK_MEM: 4MB
+      POSTGRES_MIN_WAL_SIZE: 512MB
+      POSTGRES_MAX_WAL_SIZE: 2GB
+      POSTGRES_MAX_WORKER_PROCESSES: 2
+      POSTGRES_MAX_PARALLEL_WORKERS_PER_GATHER: 1
+      POSTGRES_MAX_PARALLEL_WORKERS: 2
+      # Unraid user mapping
+      PUID: ${PUID:-99}
+      PGID: ${PGID:-100}
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      # Use /mnt/user/appdata for persistent data on Unraid
+      - ${BASE_PATH:-/mnt/user/appdata}/medicine-man/postgres:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+      - ${BASE_PATH:-/mnt/user/appdata}/medicine-man/backups:/backups
+      - ./postgres-custom.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - medicine_man_network
+    restart: unless-stopped
+    mem_limit: 1536M
+    mem_reservation: 768M
+    cpus: 1.5
+    shm_size: 256mb
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache Service
+  redis:
+    image: redis:7-alpine
+    container_name: medicine_man_redis
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      PUID: ${PUID:-99}
+      PGID: ${PGID:-100}
+      TZ: ${TZ:-America/New_York}
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 384mb
+      --maxmemory-policy noeviction
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --stop-writes-on-bgsave-error no
+      --rdbcompression yes
+      --rdbchecksum yes
+      --tcp-backlog 511
+      --timeout 300
+      --tcp-keepalive 300
+      --maxclients 500
+      --slowlog-log-slower-than 10000
+      --slowlog-max-len 128
+    volumes:
+      - ${BASE_PATH:-/mnt/user/appdata}/medicine-man/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - medicine_man_network
+    restart: unless-stopped
+    mem_limit: 512M
+    mem_reservation: 256M
+    cpus: 0.5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Backend API Service
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: medicine_man_backend
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      # Node.js memory optimization for Unraid
+      - NODE_OPTIONS=--max-old-space-size=1536 --max-semi-space-size=48
+      # Unraid standard user (nobody:users = 99:100)
+      - PUID=${PUID:-99}
+      - PGID=${PGID:-100}
+      - TZ=${TZ:-America/New_York}
+      # Conservative worker settings for Unraid
+      - UV_THREADPOOL_SIZE=4
+      - NODE_CLUSTER_WORKERS=1
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      # Map to Unraid appdata structure
+      - ${BASE_PATH:-/mnt/user/appdata}/medicine-man/logs:/app/logs
+      - ${BASE_PATH:-/mnt/user/appdata}/medicine-man/backups:/app/backups
+      - ./backend/.env:/app/.env:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - medicine_man_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    mem_limit: 2G
+    mem_reservation: 1G
+    cpus: 1.5
+    pids_limit: 150
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Frontend Service
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: medicine_man_frontend
+    environment:
+      - NGINX_WORKER_PROCESSES=2
+      - NGINX_WORKER_CONNECTIONS=512
+      - PUID=${PUID:-99}
+      - PGID=${PGID:-100}
+      - TZ=${TZ:-America/New_York}
+    ports:
+      - "${FRONTEND_PORT:-8091}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - medicine_man_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    mem_limit: 256M
+    mem_reservation: 128M
+    cpus: 0.5
+    pids_limit: 30
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+# Named volumes - not used in Unraid (we use bind mounts to /mnt/user/appdata)
+# Kept for compatibility with non-Unraid deployments
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  medicine_man_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

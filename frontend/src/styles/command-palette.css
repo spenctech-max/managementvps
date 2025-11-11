@@ -1,0 +1,65 @@
+/* Command Palette Styles */
+[cmdk-root] {
+  font-family: inherit;
+}
+
+[cmdk-list] {
+  overflow: auto;
+  overscroll-behavior: contain;
+  transition: height 0.1s ease;
+}
+
+[cmdk-list]::-webkit-scrollbar {
+  width: 8px;
+}
+
+[cmdk-list]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[cmdk-list]::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 4px;
+}
+
+[cmdk-list]::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.3);
+}
+
+[cmdk-item] {
+  cursor: pointer;
+  user-select: none;
+}
+
+[cmdk-item][data-selected='true'] {
+  background: rgba(30, 41, 59, 0.5);
+  color: white;
+}
+
+[cmdk-group-heading] {
+  user-select: none;
+}
+
+[cmdk-empty] {
+  user-select: none;
+}
+
+[cmdk-input] {
+  font-family: inherit;
+}
+
+/* Animation for modal */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+[cmdk-root] {
+  animation: slideIn 0.15s ease-out;
+}

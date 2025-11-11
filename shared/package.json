@@ -1,0 +1,27 @@
+{
+  "name": "@medicine-man/shared",
+  "version": "1.0.0",
+  "description": "Shared types, validation schemas, and constants for Medicine Man",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "typescript": "^5.6.3"
+  },
+  "keywords": [
+    "medicine-man",
+    "shared",
+    "types",
+    "validation"
+  ],
+  "author": "Medicine Man Team",
+  "license": "MIT"
+}
