@@ -27,7 +27,7 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  username: z.string().min(1, 'Username is required'),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -181,7 +181,7 @@ export function validate(schema: z.ZodSchema, source: 'body' | 'query' | 'params
           message: err.message,
         }));
 
-        next(new ValidationError('Validation failed', errors));
+        next(new ValidationError('Validation failed', { errors }));
       } else {
         next(error);
       }
@@ -208,7 +208,7 @@ export function validateOptional(schema: z.ZodSchema, source: 'body' | 'query' |
           message: err.message,
         }));
 
-        next(new ValidationError('Validation failed', errors));
+        next(new ValidationError('Validation failed', { errors }));
       } else {
         next(error);
       }
